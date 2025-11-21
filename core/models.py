@@ -71,11 +71,44 @@ class Event(models.Model):
     @property
     def participant_count(self):
         """Count registered participants"""
-        trainee_ids = set()
-        for match in self.matches.all():
-            trainee_ids.add(match.trainee1.id)
-            trainee_ids.add(match.trainee2.id)
-        return len(trainee_ids)
+        return self.registrations.filter(status='approved').count()
+    
+    @property
+    def is_registration_open(self):
+        """Check if registration is still open"""
+        if self.registration_deadline:
+            return timezone.now() < self.registration_deadline
+        return self.is_upcoming
+    
+    @property
+    def spots_remaining(self):
+        """Calculate remaining spots"""
+        if self.max_participants:
+            return max(0, self.max_participants - self.participant_count)
+        return None
+
+
+class EventRegistration(models.Model):
+    """Track trainee registrations for events"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled')
+    ]
+    
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='registrations')
+    trainee = models.ForeignKey(Trainee, on_delete=models.CASCADE, related_name='event_registrations')
+    registered_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='approved')
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        unique_together = ['event', 'trainee']
+        ordering = ['-registered_at']
+    
+    def __str__(self):
+        return f"{self.trainee} - {self.event.name} ({self.status})"
 
 class Match(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='matches')

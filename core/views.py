@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group, User
 from django.contrib.auth import authenticate, login
-from .models import Match, Trainee, Payment, Event, Promotion, DashboardStat, Notification
+from .models import Match, Trainee, Payment, Event, Promotion, DashboardStat, Notification, EventRegistration
 from django.utils import timezone
 from django.db.models import Q, Sum, Count
 from django.http import JsonResponse, HttpResponse
@@ -682,13 +682,13 @@ def event_detail(request, event_id):
     # Get all matches for this event
     matches = event.matches.select_related('trainee1', 'trainee2', 'winner', 'judge').all()
     
-    # Get unique participants
-    participant_ids = set()
-    for match in matches:
-        participant_ids.add(match.trainee1.id)
-        participant_ids.add(match.trainee2.id)
+    # Get registered participants from EventRegistration
+    registrations = EventRegistration.objects.filter(
+        event=event,
+        status='approved'
+    ).select_related('trainee__user', 'trainee__belt')
     
-    participants = Trainee.objects.filter(id__in=participant_ids).select_related('user', 'belt')
+    participants = [reg.trainee for reg in registrations]
     
     # If HTMX request, return just the detail partial
     if request.headers.get('HX-Request'):
@@ -1232,3 +1232,176 @@ def approve_trainee(request, trainee_id):
         return HttpResponse('')
         
     return redirect('pending_trainees')
+
+
+# Trainee Event Registration Views
+
+@login_required
+@user_passes_test(is_trainee)
+def trainee_events_list(request):
+    """
+    Display list of available events for trainees to register.
+    Shows only published events.
+    """
+    from .models import EventRegistration
+    
+    trainee = get_object_or_404(Trainee, user=request.user)
+    
+    # Get all published events
+    events = Event.objects.filter(is_published=True).order_by('start_date')
+    
+    # Get trainee's registrations
+    registered_event_ids = EventRegistration.objects.filter(
+        trainee=trainee
+    ).values_list('event_id', flat=True)
+    
+    # Add registration status to each event
+    for event in events:
+        event.is_registered = event.id in registered_event_ids
+        if event.is_registered:
+            event.registration = EventRegistration.objects.get(event=event, trainee=trainee)
+    
+    # Separate upcoming and past events
+    now = timezone.now()
+    upcoming_events = [e for e in events if e.start_date > now]
+    past_events = [e for e in events if e.start_date <= now]
+    
+    context = {
+        'upcoming_events': upcoming_events,
+        'past_events': past_events,
+        'trainee': trainee
+    }
+    
+    # If HTMX request, return partial
+    if request.headers.get('HX-Request'):
+        return render(request, 'partials/trainee_events_list.html', context)
+    
+    return render(request, 'trainee_events.html', context)
+
+
+@login_required
+@user_passes_test(is_trainee)
+def trainee_event_detail(request, event_id):
+    """
+    Display event details for trainee with registration option.
+    """
+    from .models import EventRegistration
+    
+    trainee = get_object_or_404(Trainee, user=request.user)
+    event = get_object_or_404(Event, pk=event_id, is_published=True)
+    
+    # Check if trainee is registered
+    try:
+        registration = EventRegistration.objects.get(event=event, trainee=trainee)
+        is_registered = True
+    except EventRegistration.DoesNotExist:
+        registration = None
+        is_registered = False
+    
+    # Get other participants
+    participants = EventRegistration.objects.filter(
+        event=event, 
+        status='approved'
+    ).select_related('trainee__user', 'trainee__belt').exclude(trainee=trainee)
+    
+    context = {
+        'event': event,
+        'is_registered': is_registered,
+        'registration': registration,
+        'participants': participants,
+        'trainee': trainee
+    }
+    
+    return render(request, 'partials/trainee_event_detail.html', context)
+
+
+@login_required
+@user_passes_test(is_trainee)
+@require_http_methods(["POST"])
+def event_register(request, event_id):
+    """
+    Register trainee for an event.
+    """
+    from .models import EventRegistration
+    
+    trainee = get_object_or_404(Trainee, user=request.user)
+    event = get_object_or_404(Event, pk=event_id, is_published=True)
+    
+    # Check if registration is open
+    if not event.is_registration_open:
+        messages.error(request, 'Registration for this event is closed.')
+        return HttpResponse('Registration closed', status=400)
+    
+    # Check if event is full
+    if event.max_participants and event.participant_count >= event.max_participants:
+        messages.error(request, 'This event is full.')
+        return HttpResponse('Event full', status=400)
+    
+    # Check if already registered
+    if EventRegistration.objects.filter(event=event, trainee=trainee).exists():
+        messages.warning(request, 'You are already registered for this event.')
+        return HttpResponse('Already registered', status=400)
+    
+    # Create registration
+    registration = EventRegistration.objects.create(
+        event=event,
+        trainee=trainee,
+        status='approved'  # Auto-approve for now
+    )
+    
+    # Create notification
+    create_notification(
+        user=trainee.user,
+        title='Event Registration Confirmed',
+        message=f'You have successfully registered for {event.name}.',
+        notification_type='event',
+        link=f'/trainee/events/{event.id}/'
+    )
+    
+    messages.success(request, f'Successfully registered for {event.name}!')
+    
+    # Return updated event card
+    event.is_registered = True
+    event.registration = registration
+    
+    response = render(request, 'partials/trainee_event_card.html', {'event': event})
+    response['HX-Trigger'] = 'eventRegistered'
+    return response
+
+
+@login_required
+@user_passes_test(is_trainee)
+@require_http_methods(["POST"])
+def event_unregister(request, event_id):
+    """
+    Unregister trainee from an event.
+    """
+    from .models import EventRegistration
+    
+    trainee = get_object_or_404(Trainee, user=request.user)
+    event = get_object_or_404(Event, pk=event_id)
+    
+    # Check if event has started
+    if event.start_date <= timezone.now():
+        messages.error(request, 'Cannot unregister from an event that has already started.')
+        return HttpResponse('Event already started', status=400)
+    
+    # Get registration
+    try:
+        registration = EventRegistration.objects.get(event=event, trainee=trainee)
+        registration.delete()
+        
+        messages.success(request, f'Successfully unregistered from {event.name}.')
+        
+        # Return updated event card
+        event.is_registered = False
+        event.registration = None
+        
+        response = render(request, 'partials/trainee_event_card.html', {'event': event})
+        response['HX-Trigger'] = 'eventUnregistered'
+        return response
+        
+    except EventRegistration.DoesNotExist:
+        messages.error(request, 'You are not registered for this event.')
+        return HttpResponse('Not registered', status=400)
+

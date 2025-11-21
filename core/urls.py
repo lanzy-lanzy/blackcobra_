@@ -41,7 +41,11 @@ from .views import (
     reports_dashboard,
     api_chart_data,
     pending_trainees,
-    approve_trainee
+    approve_trainee,
+    trainee_events_list,
+    trainee_event_detail,
+    event_register,
+    event_unregister
 )
 
 urlpatterns = [
@@ -107,4 +111,10 @@ urlpatterns = [
     # Reports & Analytics
     path('reports/', reports_dashboard, name='reports_dashboard'),
     path('api/chart-data/', api_chart_data, name='api_chart_data'),
+    
+    # Trainee Event Registration
+    path('trainee/events/', trainee_events_list, name='trainee_events_list'),
+    path('trainee/events/<int:event_id>/', trainee_event_detail, name='trainee_event_detail'),
+    path('trainee/events/<int:event_id>/register/', event_register, name='event_register'),
+    path('trainee/events/<int:event_id>/unregister/', event_unregister, name='event_unregister'),
 ]
