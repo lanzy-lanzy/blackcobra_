@@ -39,7 +39,9 @@ from .views import (
     payment_mark_paid,
     payment_reports,
     reports_dashboard,
-    api_chart_data
+    api_chart_data,
+    pending_trainees,
+    approve_trainee
 )
 
 urlpatterns = [
@@ -73,6 +75,8 @@ urlpatterns = [
     path('trainees/<int:trainee_id>/update/', trainee_update, name='trainee_update'),
     path('trainees/<int:trainee_id>/delete/', trainee_delete, name='trainee_delete'),
     path('trainees/<int:trainee_id>/delete/confirm/', trainee_delete_confirm, name='trainee_delete_confirm'),
+    path('trainees/pending/', pending_trainees, name='pending_trainees'),
+    path('trainees/<int:trainee_id>/approve/', approve_trainee, name='approve_trainee'),
     
     # Event Management
     path('events/', event_list, name='event_list'),

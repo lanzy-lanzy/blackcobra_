@@ -1,8 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.contrib.auth import authenticate, login
-from .models import Match, Trainee, Payment, Event, Promotion, DashboardStat
+from .models import Match, Trainee, Payment, Event, Promotion, DashboardStat, Notification
 from django.utils import timezone
 from django.db.models import Q, Sum, Count
 from django.http import JsonResponse, HttpResponse
@@ -548,7 +548,9 @@ def event_calendar_data(request):
     
     # Return calendar partial
     return render(request, 'partials/event_calendar.html', {
-        'events': events
+        'events': events,
+        'current_year': int(year) if year else now.year,
+        'current_month': int(month) if month else now.month
     })
 
 
@@ -562,6 +564,7 @@ def event_create(request):
     """
     if request.method == 'POST':
         form = EventForm(request.POST)
+        
         if form.is_valid():
             event = form.save()
             
@@ -581,7 +584,17 @@ def event_create(request):
             return response
     
     # GET request - return empty form
-    form = EventForm()
+    initial_data = {}
+    date_param = request.GET.get('date')
+    if date_param:
+        try:
+            # Parse date and set default time to 09:00
+            initial_data['start_date'] = f"{date_param}T09:00"
+            initial_data['end_date'] = f"{date_param}T17:00"
+        except:
+            pass
+            
+    form = EventForm(initial=initial_data)
     return render(request, 'partials/event_form_modal.html', {
         'form': form,
         'action': 'create'
@@ -1181,3 +1194,41 @@ def api_chart_data(request):
         })
         
     return JsonResponse({'error': 'Invalid chart type'}, status=400)
+
+@login_required
+@user_passes_test(is_admin)
+def pending_trainees(request):
+    """
+    Display list of pending trainees awaiting approval.
+    """
+    pending_list = Trainee.objects.filter(is_approved=False).select_related('user', 'belt').order_by('-join_date')
+    
+    return render(request, 'pending_trainees.html', {'pending_list': pending_list})
+
+@login_required
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def approve_trainee(request, trainee_id):
+    """
+    Approve a pending trainee.
+    """
+    trainee = get_object_or_404(Trainee, pk=trainee_id)
+    trainee.is_approved = True
+    trainee.is_active = True
+    trainee.save()
+    
+    # Create notification for the trainee
+    create_notification(
+        user=trainee.user,
+        title='Account Approved',
+        message='Your account has been approved. You can now access the trainee dashboard.',
+        notification_type='event'
+    )
+    
+    messages.success(request, f'Trainee {trainee.user.get_full_name()} has been approved.')
+    
+    # If HTMX, remove the row
+    if request.headers.get('HX-Request'):
+        return HttpResponse('')
+        
+    return redirect('pending_trainees')

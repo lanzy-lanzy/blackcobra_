@@ -178,6 +178,29 @@ class TraineeForm(forms.ModelForm):
 class EventForm(forms.ModelForm):
     """Form for creating and updating events"""
     
+    start_date = forms.DateTimeField(
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'],
+        widget=forms.DateTimeInput(attrs={
+            'type': 'datetime-local',
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
+        })
+    )
+    end_date = forms.DateTimeField(
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'],
+        widget=forms.DateTimeInput(attrs={
+            'type': 'datetime-local',
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
+        })
+    )
+    registration_deadline = forms.DateTimeField(
+        required=False,
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'],
+        widget=forms.DateTimeInput(attrs={
+            'type': 'datetime-local',
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
+        })
+    )
+
     class Meta:
         model = Event
         fields = ['name', 'description', 'start_date', 'end_date', 'location', 
@@ -192,14 +215,6 @@ class EventForm(forms.ModelForm):
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
                 'placeholder': 'Event description'
             }),
-            'start_date': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-            }),
-            'end_date': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-            }),
             'location': forms.TextInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
                 'placeholder': 'Event location'
@@ -211,10 +226,6 @@ class EventForm(forms.ModelForm):
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
                 'placeholder': 'Leave blank for unlimited',
                 'min': '1'
-            }),
-            'registration_deadline': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
             }),
             'is_published': forms.CheckboxInput(attrs={
                 'class': 'h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded'
@@ -230,12 +241,16 @@ class EventForm(forms.ModelForm):
         # Validate end_date > start_date
         if start_date and end_date:
             if end_date <= start_date:
-                raise forms.ValidationError('End date must be after start date.')
+                raise forms.ValidationError('End date and time must be after the start date and time.')
         
         # Validate registration_deadline < start_date
         if registration_deadline and start_date:
             if registration_deadline >= start_date:
-                raise forms.ValidationError('Registration deadline must be before the event start date.')
+                raise forms.ValidationError(
+                    f'Registration deadline ({registration_deadline.strftime("%b %d, %Y at %I:%M %p")}) '
+                    f'must be before the event start date ({start_date.strftime("%b %d, %Y at %I:%M %p")}). '
+                    f'Please set an earlier deadline or leave it blank.'
+                )
         
         return cleaned_data
 
