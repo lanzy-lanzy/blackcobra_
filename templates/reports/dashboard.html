@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics - Karate Club{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
+        <div class="flex space-x-4">
+            <button onclick="window.print()"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+        <!-- Trainee Growth Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Trainee Growth</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="traineeGrowthChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Belt Distribution Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Belt Distribution</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="beltDistributionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Payment Status Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Payment Status</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="paymentStatusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Stats</h3>
+            <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div class="px-4 py-5 bg-gray-50 shadow rounded-lg overflow-hidden sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Total Trainees</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-gray-900" hx-get="/api/stats/trainees"
+                        hx-trigger="load">
+                        ...
+                    </dd>
+                </div>
+                <div class="px-4 py-5 bg-gray-50 shadow rounded-lg overflow-hidden sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Active Events</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-gray-900" hx-get="/api/stats/events" hx-trigger="load">
+                        ...
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Helper to fetch data and render chart
+        async function renderChart(elementId, type, config = {}) {
+            try {
+                const response = await fetch(`/api/chart-data/?type=${type}`);
+                const data = await response.json();
+
+                const ctx = document.getElementById(elementId).getContext('2d');
+                new Chart(ctx, {
+                    type: config.type || 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        ...config.options
+                    }
+                });
+            } catch (error) {
+                console.error(`Error loading chart ${type}:`, error);
+            }
+        }
+
+        // Render charts
+        renderChart('traineeGrowthChart', 'trainee_growth', { type: 'line' });
+        renderChart('beltDistributionChart', 'belt_distribution', { type: 'bar' });
+        renderChart('paymentStatusChart', 'payment_status', { type: 'doughnut' });
+    });
+</script>
+{% endblock %}

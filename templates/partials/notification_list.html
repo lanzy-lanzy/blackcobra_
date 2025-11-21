@@ -1,0 +1,50 @@
+{% if notifications %}
+<div class="divide-y divide-gray-200">
+    {% for notification in notifications %}
+    <div class="px-4 py-3 hover:bg-gray-50 transition-colors {% if not notification.is_read %}bg-blue-50{% endif %}">
+        <div class="flex justify-between items-start">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900">
+                    {{ notification.title }}
+                </p>
+                <p class="text-sm text-gray-500 truncate">
+                    {{ notification.message }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">
+                    {{ notification.created_at|timesince }} ago
+                </p>
+            </div>
+            {% if not notification.is_read %}
+            <button hx-post="{% url 'mark_notification_read' notification.id %}" hx-swap="outerHTML"
+                hx-target="#notification-badge" class="ml-2 flex-shrink-0 text-blue-600 hover:text-blue-800"
+                title="Mark as read">
+                <span class="h-2 w-2 bg-blue-600 rounded-full"></span>
+            </button>
+            {% endif %}
+        </div>
+        {% if notification.link %}
+        <a href="{{ notification.link }}" class="block mt-2 text-xs text-indigo-600 hover:text-indigo-800">
+            View Details &rarr;
+        </a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- OOB Swap for Badge -->
+<div id="notification-badge" hx-swap-oob="true">
+    {% if unread_count > 0 %}
+    <span
+        class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+        {{ unread_count }}
+    </span>
+    {% endif %}
+</div>
+{% else %}
+<div class="px-4 py-8 text-center text-gray-500 text-sm">
+    No notifications
+</div>
+
+<!-- OOB Swap for Badge (Clear it) -->
+<div id="notification-badge" hx-swap-oob="true"></div>
+{% endif %}

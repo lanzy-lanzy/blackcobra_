@@ -1,0 +1,139 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Event Management - Karate Club{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ view: 'calendar', showModal: false, modalContent: '' }">
+
+    <!-- Header Section -->
+    <div class="bg-white shadow-sm rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Event Management</h1>
+                <p class="mt-2 text-gray-600">Manage karate club events, tournaments, and training sessions.</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <!-- View Switcher -->
+                <div class="inline-flex rounded-lg border border-gray-300 bg-white p-1">
+                    <button @click="view = 'calendar'"
+                        :class="view === 'calendar' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'"
+                        class="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <svg class="w-5 h-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Calendar
+                    </button>
+                    <button @click="view = 'list'"
+                        :class="view === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'"
+                        class="px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <svg class="w-5 h-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        List
+                    </button>
+                </div>
+
+                <!-- Create Event Button -->
+                <button hx-get="{% url 'event_create' %}" hx-target="#modal-content" hx-swap="innerHTML"
+                    @click="showModal = true"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Create Event
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar View -->
+    <div x-show="view === 'calendar'" x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+        class="bg-white shadow-sm rounded-lg p-6">
+
+        <div id="event-calendar" hx-get="{% url 'event_calendar_data' %}"
+            hx-trigger="load, eventCreated from:body, eventUpdated from:body, eventDeleted from:body"
+            hx-swap="innerHTML">
+            <!-- Calendar will be loaded here -->
+            <div class="animate-pulse space-y-4">
+                <div class="h-8 bg-gray-300 rounded w-1/4 mx-auto"></div>
+                <div class="grid grid-cols-7 gap-2">
+                    <div class="h-20 bg-gray-200 rounded" x-data="{}"
+                        x-init="for(let i=0; i<35; i++) { $el.parentElement.appendChild($el.cloneNode(true)); }"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- List View -->
+    <div x-show="view === 'list'" x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="space-y-4">
+
+        <div id="event-list" hx-get="{% url 'event_list' %}?view=list"
+            hx-trigger="load delay:100ms, eventCreated from:body, eventUpdated from:body, eventDeleted from:body"
+            hx-swap="innerHTML">
+            <!-- Event cards will be loaded here -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Skeleton Loading Cards -->
+                <div class="bg-white rounded-lg shadow-md p-6 animate-pulse">
+                    <div class="h-6 bg-gray-300 rounded w-3/4 mb-4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                    <div class="h-4 bg-gray-200 rounded w-5/6 mb-4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6 animate-pulse">
+                    <div class="h-6 bg-gray-300 rounded w-3/4 mb-4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                    <div class="h-4 bg-gray-200 rounded w-5/6 mb-4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6 animate-pulse">
+                    <div class="h-6 bg-gray-300 rounded w-3/4 mb-4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                    <div class="h-4 bg-gray-200 rounded w-5/6 mb-4"></div>
+                    <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Container -->
+    <div x-show="showModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto"
+        @keydown.escape.window="showModal = false">
+
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="showModal = false"></div>
+
+        <!-- Modal Content -->
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                @click.stop x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95">
+
+                <div id="modal-content"
+                    hx-on::after-request="if(event.detail.successful && !event.detail.xhr.responseText.includes('error')) { showModal = false }">
+                    <!-- Modal content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Listen for HTMX events to control modal
+    document.body.addEventListener('eventCreated', () => {
+        Alpine.store('modal', { show: false });
+    });
+
+    document.body.addEventListener('eventUpdated', () => {
+        Alpine.store('modal', { show: false });
+    });
+</script>
+
+{% endblock %}

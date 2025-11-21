@@ -1,0 +1,31 @@
+<!-- Statistics Card Component -->
+<div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+    <div class="p-6">
+        <div class="flex items-center justify-between">
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">{{ title }}</p>
+                <p class="mt-2 text-3xl font-bold text-gray-900 stat-value" id="stat-{{ stat_id }}">
+                    {{ value }}
+                </p>
+                {% if subtitle %}
+                <p class="mt-1 text-sm text-gray-500">{{ subtitle }}</p>
+                {% endif %}
+            </div>
+            <div class="flex-shrink-0">
+                <div class="p-3 rounded-full {{ icon_bg_color|default:'bg-indigo-100' }}">
+                    {{ icon|safe }}
+                </div>
+            </div>
+        </div>
+        {% if link %}
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <a href="{{ link }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-500 flex items-center group">
+                View details
+                <svg class="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>

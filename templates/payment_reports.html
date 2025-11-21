@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Reports - Karate Club{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Payment Reports</h1>
+        <a href="{% url 'payment_list' %}" class="text-indigo-600 hover:text-indigo-900 font-medium">Back to
+            Payments</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-green-50 p-6 rounded-lg border border-green-200">
+            <h3 class="text-lg font-medium text-green-800">Total Collected</h3>
+            <p class="text-3xl font-bold text-green-900 mt-2">${{ total_collected|floatformat:2 }}</p>
+        </div>
+
+        <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+            <h3 class="text-lg font-medium text-yellow-800">Total Pending</h3>
+            <p class="text-3xl font-bold text-yellow-900 mt-2">${{ total_pending|floatformat:2 }}</p>
+        </div>
+
+        <div class="bg-red-50 p-6 rounded-lg border border-red-200">
+            <h3 class="text-lg font-medium text-red-800">Total Overdue</h3>
+            <p class="text-3xl font-bold text-red-900 mt-2">${{ total_overdue|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="bg-gray-50 p-8 rounded-lg text-center text-gray-500">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+            </path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Detailed Charts Coming Soon</h3>
+        <p class="mt-1 text-sm text-gray-500">Advanced analytics and charts will be implemented in the Reporting module.
+        </p>
+    </div>
+</div>
+{% endblock %}

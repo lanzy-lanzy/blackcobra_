@@ -1,0 +1,240 @@
+<!-- Modal Header -->
+<div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+    <div class="flex items-center justify-between">
+        <h3 class="text-lg font-medium text-gray-900">
+            {% if action == 'create' %}
+            Add New Trainee
+            {% else %}
+            Edit Trainee
+            {% endif %}
+        </h3>
+        <button @click="modalOpen = false" type="button"
+            class="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg p-1">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- Modal Body -->
+<form {% if action == 'create' %}hx-post="{% url 'trainee_create' %}" hx-target="#trainee-table-body" hx-swap="innerHTML"{% else %}hx-post="{% url 'trainee_update' trainee.id %}" hx-target="#trainee-{{ trainee.id }}" hx-swap="outerHTML"{% endif %} hx-encoding="multipart/form-data" class="px-6 py-4">
+
+    {% csrf_token %}
+
+    <!-- Display Form Errors -->
+    {% if form.errors %}
+    <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div class="flex items-start">
+            <svg class="w-5 h-5 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <p class="font-medium">Please correct the following errors:</p>
+                <ul class="list-disc list-inside mt-2 text-sm">
+                    {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>{{ field|title }}: {{ error }}</li>
+                    {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="space-y-6 max-h-[60vh] overflow-y-auto">
+
+        <!-- User Information Section -->
+        <div>
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">User Information</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- First Name -->
+                <div>
+                    <label for="id_first_name" class="block text-sm font-medium text-gray-700">
+                        First Name <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Last Name -->
+                <div>
+                    <label for="id_last_name" class="block text-sm font-medium text-gray-700">
+                        Last Name <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Username -->
+                <div>
+                    <label for="id_username" class="block text-sm font-medium text-gray-700">
+                        Username <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.username.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="id_email" class="block text-sm font-medium text-gray-700">
+                        Email <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Password -->
+                <div class="md:col-span-2">
+                    <label for="id_password" class="block text-sm font-medium text-gray-700">
+                        Password {% if action == 'create' %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {{ form.password }}
+                    {% if action == 'update' %}
+                    <p class="mt-1 text-xs text-gray-500">Leave blank to keep current password</p>
+                    {% endif %}
+                    {% if form.password.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.password.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Trainee Information Section -->
+        <div>
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">Trainee Information</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- Date of Birth -->
+                <div>
+                    <label for="id_date_of_birth" class="block text-sm font-medium text-gray-700">
+                        Date of Birth <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.date_of_birth }}
+                    {% if form.date_of_birth.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.date_of_birth.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Belt -->
+                <div>
+                    <label for="id_belt" class="block text-sm font-medium text-gray-700">
+                        Belt Level <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.belt }}
+                    {% if form.belt.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.belt.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Contact Number -->
+                <div>
+                    <label for="id_contact_number" class="block text-sm font-medium text-gray-700">
+                        Contact Number <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.contact_number }}
+                    {% if form.contact_number.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.contact_number.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Profile Image -->
+                <div>
+                    <label for="id_profile_image" class="block text-sm font-medium text-gray-700">
+                        Profile Image
+                    </label>
+                    {{ form.profile_image }}
+                    {% if form.profile_image.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.profile_image.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Address -->
+                <div class="md:col-span-2">
+                    <label for="id_address" class="block text-sm font-medium text-gray-700">
+                        Address <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.address.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Emergency Contact Section -->
+        <div>
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">Emergency Contact</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- Emergency Contact Name -->
+                <div>
+                    <label for="id_emergency_contact" class="block text-sm font-medium text-gray-700">
+                        Contact Name
+                    </label>
+                    {{ form.emergency_contact }}
+                    {% if form.emergency_contact.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.emergency_contact.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Emergency Phone -->
+                <div>
+                    <label for="id_emergency_phone" class="block text-sm font-medium text-gray-700">
+                        Contact Phone
+                    </label>
+                    {{ form.emergency_phone }}
+                    {% if form.emergency_phone.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.emergency_phone.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Status Section -->
+        <div>
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">Status</h4>
+            <div class="flex items-center">
+                {{ form.is_active }}
+                <label for="id_is_active" class="ml-2 block text-sm text-gray-700">
+                    Active trainee
+                </label>
+            </div>
+            {% if form.is_active.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.is_active.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="bg-gray-50 px-6 py-4 mt-6 -mx-6 -mb-4 flex items-center justify-end space-x-3 border-t border-gray-200">
+        <button type="button" @click="modalOpen = false"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+            Cancel
+        </button>
+        <button type="submit"
+            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+            {% if action == 'create' %}
+            Create Trainee
+            {% else %}
+            Update Trainee
+            {% endif %}
+        </button>
+    </div>
+
+</form>

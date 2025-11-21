@@ -1,0 +1,55 @@
+<tr id="payment-row-{{ payment.id }}" class="{% if payment.is_overdue %}bg-red-50{% endif %}">
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+            <div class="flex-shrink-0 h-8 w-8">
+                {% if payment.trainee.profile_image %}
+                <img class="h-8 w-8 rounded-full object-cover" src="{{ payment.trainee.profile_image.url }}" alt="">
+                {% else %}
+                <div
+                    class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
+                    {{ payment.trainee.user.first_name|first }}{{ payment.trainee.user.last_name|first }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">{{ payment.trainee.user.get_full_name }}</div>
+            </div>
+        </div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {{ payment.description }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        ${{ payment.amount }}
+    </td>
+    <td
+        class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 {% if payment.is_overdue %}text-red-600 font-medium{% endif %}">
+        {{ payment.date|date:"M j, Y" }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        {% if payment.paid %}
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+            Paid
+        </span>
+        {% elif payment.is_overdue %}
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+            Overdue
+        </span>
+        {% else %}
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+            Pending
+        </span>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        {% if not payment.paid %}
+        <button hx-post="{% url 'payment_mark_paid' payment.id %}" hx-target="#payment-row-{{ payment.id }}"
+            hx-swap="outerHTML"
+            class="text-green-600 hover:text-green-900 bg-green-50 px-3 py-1 rounded-md transition-colors">
+            Mark Paid
+        </button>
+        {% else %}
+        <span class="text-gray-400 cursor-not-allowed">Completed</span>
+        {% endif %}
+    </td>
+</tr>

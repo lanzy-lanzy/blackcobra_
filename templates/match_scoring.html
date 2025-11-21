@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Match Scoring - Karate Club{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{% url 'judge_dashboard' %}" 
+           class="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Match Scoring Interface -->
+    <div id="match-scoring-container" 
+         hx-get="{% url 'match_scoring' match.id %}"
+         hx-trigger="load, matchCompleted from:body"
+         hx-swap="innerHTML">
+        {% include 'partials/match_scoring_interface.html' %}
+    </div>
+</div>
+{% endblock %}
