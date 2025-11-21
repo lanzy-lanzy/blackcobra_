@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group, User
 from django.contrib.auth import authenticate, login
-from .models import Match, Trainee, Payment, Event, Promotion, DashboardStat, Notification, EventRegistration
+from .models import Match, Trainee, Payment, Event, Promotion, DashboardStat, Notification, EventRegistration, Belt
 from django.utils import timezone
 from django.db.models import Q, Sum, Count
 from django.http import JsonResponse, HttpResponse
@@ -883,16 +883,16 @@ def promotion_list(request):
         
         trainee.performance_eligible = match_count >= 5 and win_rate >= 40
         trainee.match_count = match_count
-        trainee.win_rate = round(win_rate, 1)
+        trainee.calculated_win_rate = round(win_rate, 1)  # Changed from win_rate to avoid property conflict
         
         # Overall eligibility (can be adjusted)
         trainee.is_eligible = trainee.time_eligible
         
         # Next belt
         if trainee.belt:
-            trainee.next_belt = Belt.objects.filter(order__gt=trainee.belt.order).order_by('order').first()
+            trainee.promotion_next_belt = Belt.objects.filter(order__gt=trainee.belt.order).order_by('order').first()  # Changed from next_belt
         else:
-            trainee.next_belt = Belt.objects.order_by('order').first()
+            trainee.promotion_next_belt = Belt.objects.order_by('order').first()
 
     context = {
         'trainees': trainees,
@@ -1405,3 +1405,130 @@ def event_unregister(request, event_id):
         messages.error(request, 'You are not registered for this event.')
         return HttpResponse('Not registered', status=400)
 
+
+
+# Points and Leaderboard Views
+
+@login_required
+def leaderboard(request):
+    """
+    Display trainee leaderboard based on total points.
+    Accessible to all authenticated users.
+    """
+    from .models import PointsTransaction
+    
+    # Get all active trainees ordered by total points
+    trainees = Trainee.objects.filter(
+        is_active=True,
+        is_approved=True
+    ).select_related('user', 'belt').order_by('-total_points', 'user__first_name')
+    
+    # Add rank to each trainee
+    for idx, trainee in enumerate(trainees, 1):
+        trainee.current_rank = idx
+    
+    context = {
+        'trainees': trainees
+    }
+    
+    return render(request, 'leaderboard.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+@require_http_methods(["GET", "POST"])
+def award_points(request, trainee_id):
+    """
+    Award or deduct points from a trainee.
+    Admin only.
+    """
+    from .models import PointsTransaction
+    from .forms import PointsAwardForm
+    
+    trainee = get_object_or_404(Trainee, pk=trainee_id)
+    
+    if request.method == 'POST':
+        form = PointsAwardForm(request.POST)
+        if form.is_valid():
+            points = form.cleaned_data['points']
+            description = form.cleaned_data['description']
+            
+            # Create points transaction
+            PointsTransaction.objects.create(
+                trainee=trainee,
+                points=points,
+                transaction_type='admin_award',
+                description=description,
+                awarded_by=request.user
+            )
+            
+            # Create notification
+            create_notification(
+                user=trainee.user,
+                title='Points Awarded!' if points > 0 else 'Points Deducted',
+                message=f'You have {"earned" if points > 0 else "lost"} {abs(points)} points. Reason: {description}',
+                notification_type='promotion',
+                link='/leaderboard/'
+            )
+            
+            messages.success(request, f'Successfully {"awarded" if points > 0 else "deducted"} {abs(points)} points to {trainee.user.get_full_name()}.')
+            
+            response = HttpResponse('')
+            response['HX-Trigger'] = 'pointsAwarded'
+            return response
+        else:
+            # Return form with errors
+            response = render(request, 'partials/points_award_form.html', {
+                'form': form,
+                'trainee': trainee
+            }, status=400)
+            response['HX-Retarget'] = '#modal-content'
+            response['HX-Reswap'] = 'innerHTML'
+            return response
+    
+    # GET request - return form
+    form = PointsAwardForm()
+    return render(request, 'partials/points_award_form.html', {
+        'form': form,
+        'trainee': trainee
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def points_history(request, trainee_id):
+    """
+    View points transaction history for a trainee.
+    Admin only.
+    """
+    from .models import PointsTransaction
+    
+    trainee = get_object_or_404(Trainee, pk=trainee_id)
+    transactions = PointsTransaction.objects.filter(trainee=trainee).select_related('event', 'awarded_by')
+    
+    context = {
+        'trainee': trainee,
+        'transactions': transactions
+    }
+    
+    return render(request, 'partials/points_history.html', context)
+
+
+@login_required
+@user_passes_test(is_trainee)
+def my_points(request):
+    """
+    View own points and transaction history.
+    Trainee only.
+    """
+    from .models import PointsTransaction
+    
+    trainee = get_object_or_404(Trainee, user=request.user)
+    transactions = PointsTransaction.objects.filter(trainee=trainee).select_related('event', 'awarded_by')
+    
+    context = {
+        'trainee': trainee,
+        'transactions': transactions
+    }
+    
+    return render(request, 'my_points.html', context)

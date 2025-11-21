@@ -1,0 +1,196 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}My Points - Karate Club{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header with Points Summary -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg rounded-lg p-8 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">My Points & Progress</h1>
+                <p class="text-indigo-100">Track your journey to the next belt level</p>
+            </div>
+            <div class="text-right">
+                <div class="text-5xl font-bold">{{ trainee.total_points }}</div>
+                <div class="text-indigo-100 mt-1">Total Points</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Current Rank -->
+        <div class="bg-white shadow-sm rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Current Rank</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">#{{ trainee.rank }}</p>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-full">
+                    <svg class="w-8 h-8 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Belt -->
+        <div class="bg-white shadow-sm rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Current Belt</p>
+                    {% if trainee.belt %}
+                    <p class="text-2xl font-bold mt-2" style="color: {{ trainee.belt.color }};">{{ trainee.belt.name }}
+                    </p>
+                    {% else %}
+                    <p class="text-2xl font-bold text-gray-400 mt-2">No Belt</p>
+                    {% endif %}
+                </div>
+                <div class="p-3 rounded-full" style="background-color: {{ trainee.belt.color|default:'#6B7280' }}20;">
+                    <svg class="w-8 h-8" style="color: {{ trainee.belt.color|default:'#6B7280' }};" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Belt Progress -->
+        <div class="bg-white shadow-sm rounded-lg p-6">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Next Belt</p>
+                {% if trainee.next_belt %}
+                <p class="text-2xl font-bold mt-2" style="color: {{ trainee.next_belt.color }};">{{
+                    trainee.next_belt.name }}</p>
+                <div class="mt-3">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>{{ trainee.points_to_next_belt }} points needed</span>
+                        <span>{{ trainee.next_belt.points_required }} total</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                            style="width: {% widthratio trainee.total_points trainee.next_belt.points_required 100 %}%">
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-xl font-bold text-green-600 mt-2">Max Belt Achieved! 🎉</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Points History -->
+    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">Points History</h2>
+            <p class="text-sm text-gray-600 mt-1">All your points transactions</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Points</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for transaction in transactions %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ transaction.created_at|date:"M d, Y g:i A" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if transaction.transaction_type == 'training' %}bg-blue-100 text-blue-800
+                                {% elif transaction.transaction_type == 'tournament' %}bg-red-100 text-red-800
+                                {% elif transaction.transaction_type == 'win' %}bg-green-100 text-green-800
+                                {% elif transaction.transaction_type == 'seminar' %}bg-purple-100 text-purple-800
+                                {% elif transaction.transaction_type == 'admin_award' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ transaction.get_transaction_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            {{ transaction.description }}
+                            {% if transaction.event %}
+                            <span class="text-gray-500">- {{ transaction.event.name }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span
+                                class="text-lg font-bold {% if transaction.points > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if transaction.points > 0 %}+{% endif %}{{ transaction.points }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p class="text-sm">No points transactions yet</p>
+                            <p class="text-xs text-gray-400 mt-1">Participate in events and training to earn points!</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-white shadow-sm rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">How to Earn More Points</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg">
+                <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <div>
+                    <p class="font-medium text-blue-900">Attend Training</p>
+                    <p class="text-sm text-blue-700">Earn points for each session</p>
+                </div>
+            </div>
+            <div class="flex items-start space-x-3 p-4 bg-red-50 rounded-lg">
+                <svg class="w-6 h-6 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <div>
+                    <p class="font-medium text-red-900">Join Tournaments</p>
+                    <p class="text-sm text-red-700">Compete and earn rewards</p>
+                </div>
+            </div>
+            <div class="flex items-start space-x-3 p-4 bg-green-50 rounded-lg">
+                <svg class="w-6 h-6 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <p class="font-medium text-green-900">Win Matches</p>
+                    <p class="text-sm text-green-700">Bonus points for victories</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

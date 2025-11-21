@@ -6,6 +6,10 @@ class Belt(models.Model):
     name = models.CharField(max_length=50)
     color = models.CharField(max_length=20, default='#000000')
     order = models.PositiveIntegerField()
+    points_required = models.PositiveIntegerField(default=0, help_text="Points required to achieve this belt")
+
+    class Meta:
+        ordering = ['order']
 
     def __str__(self):
         return self.name
@@ -22,6 +26,7 @@ class Trainee(models.Model):
     emergency_phone = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
     is_approved = models.BooleanField(default=False)  # Requires admin approval
+    total_points = models.PositiveIntegerField(default=0, help_text="Total points earned from training and events")
 
     def __str__(self):
         return self.user.get_full_name() or self.user.username
@@ -41,6 +46,31 @@ class Trainee(models.Model):
         return self.payments.filter(paid=False).aggregate(
             total=models.Sum('amount')
         )['total'] or 0
+    
+    @property
+    def next_belt(self):
+        """Get the next belt in progression"""
+        if self.belt:
+            return Belt.objects.filter(order__gt=self.belt.order).first()
+        return Belt.objects.first()
+    
+    @property
+    def points_to_next_belt(self):
+        """Calculate points needed for next belt"""
+        next_belt = self.next_belt
+        if next_belt:
+            return max(0, next_belt.points_required - self.total_points)
+        return 0
+    
+    @property
+    def rank(self):
+        """Get trainee's rank based on total points (1 = highest)"""
+        from django.db.models import Count
+        higher_ranked = Trainee.objects.filter(
+            is_active=True,
+            total_points__gt=self.total_points
+        ).count()
+        return higher_ranked + 1
 
 class Event(models.Model):
     EVENT_TYPE_CHOICES = [
@@ -141,6 +171,44 @@ class Promotion(models.Model):
 
     def __str__(self):
         return f"{self.trainee} promoted from {self.belt_from} to {self.belt_to} on {self.date}"
+
+
+class PointsTransaction(models.Model):
+    """Track points earned by trainees"""
+    TRANSACTION_TYPE_CHOICES = [
+        ('training', 'Training Session Attendance'),
+        ('tournament', 'Tournament Participation'),
+        ('win', 'Match Win'),
+        ('seminar', 'Seminar Attendance'),
+        ('admin_award', 'Admin Award'),
+        ('promotion', 'Belt Promotion Bonus'),
+    ]
+    
+    trainee = models.ForeignKey(Trainee, on_delete=models.CASCADE, related_name='points_transactions')
+    points = models.IntegerField(help_text="Points earned (can be negative for deductions)")
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES)
+    description = models.CharField(max_length=255)
+    event = models.ForeignKey(Event, on_delete=models.SET_NULL, null=True, blank=True, related_name='points_awarded')
+    awarded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, limit_choices_to={'groups__name': 'Admin'})
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.trainee} - {self.points} points for {self.get_transaction_type_display()}"
+    
+    def save(self, *args, **kwargs):
+        """Update trainee's total points when transaction is created"""
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        if is_new:
+            # Update trainee's total points
+            self.trainee.total_points = self.trainee.points_transactions.aggregate(
+                total=models.Sum('points')
+            )['total'] or 0
+            self.trainee.save(update_fields=['total_points'])
 
 
 class Notification(models.Model):

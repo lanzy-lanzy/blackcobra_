@@ -45,7 +45,11 @@ from .views import (
     trainee_events_list,
     trainee_event_detail,
     event_register,
-    event_unregister
+    event_unregister,
+    leaderboard,
+    award_points,
+    points_history,
+    my_points
 )
 
 urlpatterns = [
@@ -117,4 +121,10 @@ urlpatterns = [
     path('trainee/events/<int:event_id>/', trainee_event_detail, name='trainee_event_detail'),
     path('trainee/events/<int:event_id>/register/', event_register, name='event_register'),
     path('trainee/events/<int:event_id>/unregister/', event_unregister, name='event_unregister'),
+    
+    # Points and Leaderboard
+    path('leaderboard/', leaderboard, name='leaderboard'),
+    path('trainees/<int:trainee_id>/award-points/', award_points, name='award_points'),
+    path('trainees/<int:trainee_id>/points-history/', points_history, name='points_history'),
+    path('my-points/', my_points, name='my_points'),
 ]

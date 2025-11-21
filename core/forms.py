@@ -301,4 +301,31 @@ class PromotionForm(forms.Form):
         if trainee and trainee.belt:
             # Only allow belts higher than current
             self.fields['belt'].queryset = Belt.objects.filter(order__gt=trainee.belt.order).order_by('order')
+        else:
+            # If trainee has no belt, show all belts
+            self.fields['belt'].queryset = Belt.objects.all().order_by('order')
 
+
+
+class PointsAwardForm(forms.Form):
+    """Form for awarding points to trainees"""
+    points = forms.IntegerField(
+        widget=forms.NumberInput(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
+            'placeholder': 'Enter points (negative to deduct)'
+        }),
+        help_text="Enter positive number to award points, negative to deduct"
+    )
+    description = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm',
+            'placeholder': 'Reason for awarding/deducting points'
+        })
+    )
+    
+    def clean_points(self):
+        points = self.cleaned_data.get('points')
+        if points == 0:
+            raise forms.ValidationError("Points cannot be zero.")
+        return points
